@@ -1,0 +1,10 @@
+name: retry-storm
+provider: shopify
+
+events:
+  - fixture: order-created
+    at: 0s
+
+  - fixture: order-paid
+    at: 10s
+    attempts: 8

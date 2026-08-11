@@ -1,0 +1,20 @@
+name: duplicate-paid
+provider: shopify
+
+events:
+  - fixture: order-created
+    at: 0s
+
+  - fixture: order-paid
+    at: 10s
+    duplicate:
+      count: 3
+      ids: same
+      spacing: 0s
+
+  - fixture: order-updated
+    at: 15s
+    duplicate:
+      count: 2
+      ids: new
+      spacing: 200ms

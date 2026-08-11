@@ -1,0 +1,64 @@
+{
+  "name": "webhook-chaos",
+  "version": "0.1.0",
+  "description": "Deterministic webhook delivery testing — replay recorded Shopify events late, duplicated and out of order, with valid signatures.",
+  "keywords": [
+    "webhook",
+    "webhooks",
+    "shopify",
+    "testing",
+    "fault-injection",
+    "chaos-engineering",
+    "idempotency",
+    "hmac",
+    "replay"
+  ],
+  "license": "MIT",
+  "author": "Alexander Fokin",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/24tiy/webhook-chaos.git"
+  },
+  "bugs": {
+    "url": "https://github.com/24tiy/webhook-chaos/issues"
+  },
+  "homepage": "https://github.com/24tiy/webhook-chaos#readme",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "webhook-chaos": "dist/cli.js"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "fixtures",
+    "scenarios",
+    "examples",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "prepublishOnly": "npm run build",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "yaml": "^2.6.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2",
+    "vitest": "^4.1.10"
+  }
+}

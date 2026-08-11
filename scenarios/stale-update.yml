@@ -1,0 +1,16 @@
+name: stale-update
+provider: shopify
+
+events:
+  - fixture: order-created
+    at: 0s
+
+  - fixture: order-updated
+    at: 5s
+    deliver_at: 4h
+
+  - fixture: order-paid
+    at: 10s
+
+  - fixture: order-cancelled
+    at: 20s
