@@ -1,6 +1,6 @@
 {
   "name": "webhook-chaos",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Deterministic webhook delivery testing — replay recorded Shopify events late, duplicated and out of order, with valid signatures.",
   "keywords": [
     "webhook",
