@@ -30,10 +30,8 @@ Webhooks fail differently. They arrive late, twice, and in the wrong order, over
 ## Install
 
 ```bash
-npm install --save-dev github:24tiy/webhook-chaos
+npm install --save-dev webhook-chaos
 ```
-
-Not on npm yet.
 
 ## The demo
 
