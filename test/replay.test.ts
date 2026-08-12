@@ -3,6 +3,7 @@ import { createServer, type IncomingMessage, type Server } from 'node:http';
 import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { loadScenario } from '../src/scenario.js';
+import { loadFixture } from '../src/fixture.js';
 import { replay } from '../src/deliver.js';
 
 const FIXTURES = fileURLToPath(new URL('../fixtures/shopify', import.meta.url));
@@ -126,14 +127,21 @@ describe('replay against a live target', () => {
       startedAt,
     });
 
+    const originalGap = async (name: string): Promise<number> => {
+      const fixture = await loadFixture(FIXTURES, name);
+      const payload = JSON.parse(fixture.body) as Record<string, string>;
+      return Date.parse(payload['updated_at']!) - Date.parse(payload['created_at']!);
+    };
+
     const created = payloadOf(target.received[0]!);
     const cancelled = payloadOf(target.received[2]!);
+    const at = (payload: Record<string, unknown>, field: string): number => Date.parse(payload[field] as string);
 
-    expect(Date.parse(created['created_at'] as string)).toBe(startedAt.getTime() - (startedAt.getTime() % 1000));
-    expect(
-      Date.parse(cancelled['updated_at'] as string) - Date.parse(created['created_at'] as string),
-    ).toBe(20_000);
-    expect(Date.parse(cancelled['cancelled_at'] as string)).toBe(Date.parse(cancelled['updated_at'] as string));
+    expect(at(created, 'updated_at')).toBe(startedAt.getTime() - (startedAt.getTime() % 1000));
+    expect(at(cancelled, 'updated_at') - at(cancelled, 'created_at')).toBe(await originalGap('order-cancelled'));
+    expect(at(created, 'updated_at') - at(created, 'created_at')).toBe(await originalGap('order-created'));
+    expect(at(cancelled, 'cancelled_at')).toBe(at(cancelled, 'updated_at'));
+    expect(at(cancelled, 'updated_at') - at(created, 'updated_at')).toBe(20_000);
   });
 
   it('keeps arrival order when a slow handler would otherwise let the next event overtake it', async () => {

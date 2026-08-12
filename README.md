@@ -4,6 +4,8 @@ Deterministic webhook delivery testing. Replay recorded Shopify events late, dup
 
 Shopify does not guarantee the order in which webhooks arrive, and the same webhook can be delivered more than once. Failed deliveries are retried up to 8 times over 4 hours. Most apps are only ever tested against the happy path: one event, delivered once, in the order it was created.
 
+The fixtures in this repository were recorded from a real development store, and `orders/create` arrived fourth, after the payment. No retries, no failures, one healthy endpoint.
+
 `webhook-chaos` delivers your fixtures the way production does.
 
 ```
@@ -206,7 +208,11 @@ Stripe is next, and it is the reason the signature clock is modelled separately:
 
 ## Fixtures in this repository
 
-The four fixtures under `fixtures/shopify` are synthetic. They have the shape of a Shopify order webhook and are good enough to run the demo, but they were written by hand, not captured from a store. Record your own against a development store before trusting a scenario.
+The four fixtures under `fixtures/shopify` are real. They were recorded from a Shopify development store on 2026-08-11 at API version 2026-07, from a single order taken through create, paid, updated and cancelled, so they share one order id and one coherent history. Each payload has 94 top-level fields, which is what a real `orders/*` body looks like.
+
+They went through the recorder's scrubber on the way in, and the shop domain was replaced with `webhook-chaos.myshopify.com` afterwards.
+
+Recording them produced the argument for this tool better than any documentation could. Four events fired in the order create, paid, updated, updated. They arrived in the order **updated, paid, updated, create** — the creation event for the order landed last, after the payment. Nothing was wrong: no retries, no failures, a single healthy endpoint, a 143 ms round trip. That is simply how Shopify delivers.
 
 The Shopify retry schedule (`0, 5m, 15m, 35m, 1h15m, 2h15m, 3h15m, 4h`) is an approximation of the documented "8 attempts over 4 hours". The count and the total window are right; the exact spacing between attempts is not published.
 
