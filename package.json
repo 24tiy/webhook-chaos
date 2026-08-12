@@ -1,11 +1,12 @@
 {
   "name": "webhook-chaos",
   "version": "0.2.0",
-  "description": "Deterministic webhook delivery testing — replay recorded Shopify events late, duplicated and out of order, with valid signatures.",
+  "description": "Deterministic webhook delivery testing — replay recorded Shopify and Stripe events late, duplicated and out of order, with valid signatures.",
   "keywords": [
     "webhook",
     "webhooks",
     "shopify",
+    "stripe",
     "testing",
     "fault-injection",
     "chaos-engineering",
