@@ -235,6 +235,10 @@ The Stripe fixtures under `fixtures/stripe` say `synthetic`, because they were w
 
 Recording them produced the argument for this tool better than any documentation could. Four events fired in the order create, paid, updated, updated. They arrived in the order **updated, paid, updated, create** — the creation event for the order landed last, after the payment. Nothing was wrong: no retries, no failures, a single healthy endpoint, a 143 ms round trip. That is simply how Shopify delivers.
 
+`scenarios/real-arrival-order.yml` replays that burst, so the thing the store did once can be run against your handler on demand.
+
+There is a fifth fixture, `order-updated-after-cancel`, recorded from the same order after the cancellation. It exists to catch the opposite mistake: an app that guards against stale updates too bluntly and starts dropping legitimate ones. `scenarios/late-update-after-cancel.yml` delivers it four hours late, and a correct handler applies it rather than ignoring it.
+
 The Shopify retry schedule (`0, 5m, 15m, 35m, 1h15m, 2h15m, 3h15m, 4h`) is an approximation of the documented "8 attempts over 4 hours". The count and the total window are right; the exact spacing between attempts is not published.
 
 ## License

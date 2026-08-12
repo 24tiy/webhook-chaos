@@ -179,6 +179,42 @@ describe('replay against a live target', () => {
     target = await startTarget();
   });
 
+  it('reproduces the arrival order the development store actually produced', async () => {
+    const scenario = await loadScenario(`${SCENARIOS}/real-arrival-order.yml`);
+    await replay({ scenario, fixturesDir: FIXTURES, target: target.url, secret: SECRET, timeScale: 1 });
+
+    expect(target.received.map((entry) => entry.headers['x-shopify-topic'])).toEqual([
+      'orders/updated',
+      'orders/paid',
+      'orders/updated',
+      'orders/create',
+    ]);
+
+    const ids = target.received.map((entry) => entry.headers['x-shopify-webhook-id']!);
+    expect(new Set(ids).size).toBe(4);
+
+    const created = payloadOf(target.received[3]!);
+    const firstUpdate = payloadOf(target.received[0]!);
+    expect(Date.parse(created['created_at'] as string)).toBeGreaterThanOrEqual(
+      Date.parse(firstUpdate['updated_at'] as string),
+    );
+  });
+
+  it('keeps a post-cancellation update newer than the cancellation it follows', async () => {
+    const scenario = await loadScenario(`${SCENARIOS}/late-update-after-cancel.yml`);
+    await replay({ scenario, fixturesDir: FIXTURES, target: target.url, secret: SECRET, timeScale: 14_400 });
+
+    const cancelled = payloadOf(target.received[2]!);
+    const lateUpdate = payloadOf(target.received[3]!);
+
+    expect(target.received[3]!.headers['x-shopify-topic']).toBe('orders/updated');
+    expect(lateUpdate['financial_status']).toBe('refunded');
+    expect(lateUpdate['cancelled_at']).not.toBeNull();
+    expect(Date.parse(lateUpdate['updated_at'] as string)).toBeGreaterThanOrEqual(
+      Date.parse(cancelled['updated_at'] as string),
+    );
+  });
+
   it('sends duplicates with the id policy the scenario asked for', async () => {
     const scenario = await loadScenario(`${SCENARIOS}/duplicate-paid.yml`);
     const report = await replay({

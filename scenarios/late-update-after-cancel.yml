@@ -1,0 +1,16 @@
+name: late-update-after-cancel
+provider: shopify
+
+events:
+  - fixture: order-created
+    at: 0s
+
+  - fixture: order-paid
+    at: 10s
+
+  - fixture: order-cancelled
+    at: 73s
+
+  - fixture: order-updated-after-cancel
+    at: 73s
+    deliver_at: 4h

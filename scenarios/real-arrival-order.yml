@@ -1,0 +1,17 @@
+name: real-arrival-order
+provider: shopify
+
+events:
+  - fixture: order-updated
+    at: 0s
+
+  - fixture: order-paid
+    at: 2s
+
+  - fixture: order-updated
+    at: 0s
+    deliver_at: 2s500ms
+
+  - fixture: order-created
+    at: 2s
+    deliver_at: 3s
