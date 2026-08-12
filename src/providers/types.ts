@@ -3,6 +3,13 @@ export interface OutgoingRequest {
   body: Buffer;
 }
 
+export interface PreparePayloadInput {
+  payload: unknown;
+  anchor: string | null;
+  eventTime: Date;
+  webhookId: string;
+}
+
 export interface SignInput {
   body: Buffer;
   secret: string;
@@ -15,12 +22,12 @@ export interface SignInput {
 
 export interface Provider {
   readonly name: string;
-  readonly anchorFields: readonly string[];
   readonly sensitiveKeys: readonly string[];
   readonly retryOffsetsMs: readonly number[];
   readonly signatureHeader: string;
   readonly carriedHeaders: readonly string[];
-  topicOf(headers: Record<string, string>): string | null;
-  webhookIdOf(headers: Record<string, string>): string | null;
+  anchorOf(payload: unknown): string | null;
+  topicOf(headers: Record<string, string>, payload: unknown): string | null;
+  preparePayload(input: PreparePayloadInput): unknown;
   build(input: SignInput): OutgoingRequest;
 }

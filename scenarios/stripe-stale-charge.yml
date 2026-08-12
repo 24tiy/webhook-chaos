@@ -1,0 +1,16 @@
+name: stripe-stale-charge
+provider: stripe
+
+events:
+  - fixture: payment-intent-created
+    at: 0s
+
+  - fixture: charge-succeeded
+    at: 5s
+    deliver_at: 4h
+
+  - fixture: payment-intent-succeeded
+    at: 10s
+
+  - fixture: charge-refunded
+    at: 70s

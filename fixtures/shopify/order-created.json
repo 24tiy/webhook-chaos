@@ -3,6 +3,7 @@
   "topic": "orders/create",
   "anchor": "2026-08-11T08:27:45-04:00",
   "recordedAt": "2026-08-11T12:27:47.180Z",
+  "source": "recorded",
   "redacted": true,
   "headers": {
     "x-shopify-topic": "orders/create",

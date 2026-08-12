@@ -50,7 +50,7 @@ function fail(message: string): never {
 }
 
 function pad(text: string, width: number): string {
-  return text.length >= width ? text : text + ' '.repeat(width - text.length);
+  return text + ' '.repeat(Math.max(1, width - text.length));
 }
 
 function statusLabel(outcome: DeliveryOutcome): string {

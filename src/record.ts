@@ -4,7 +4,6 @@ import { join } from 'node:path';
 import { saveFixture, type Fixture } from './fixture.js';
 import { getProvider } from './providers/index.js';
 import { redact } from './redact.js';
-import { findAnchor } from './timeshift.js';
 
 export interface RecordedEvent {
   file: string;
@@ -102,15 +101,15 @@ export async function startRecorder(options: RecorderOptions): Promise<RecorderH
       }
     }
 
-    const topic = provider.topicOf(headers) ?? 'unknown';
-
     let payload: unknown;
     try {
       payload = JSON.parse(raw.toString('utf8'));
     } catch (error) {
-      options.onError?.(new Error(`skipped ${topic}: body is not JSON (${(error as Error).message})`));
+      options.onError?.(new Error(`skipped a delivery: body is not JSON (${(error as Error).message})`));
       return;
     }
+
+    const topic = provider.topicOf(headers, payload) ?? 'unknown';
 
     const stored = redactPayloads ? redact(payload, provider.sensitiveKeys) : payload;
 
@@ -123,8 +122,9 @@ export async function startRecorder(options: RecorderOptions): Promise<RecorderH
     const fixture: Fixture = {
       provider: provider.name,
       topic,
-      anchor: findAnchor(payload, provider.anchorFields),
+      anchor: provider.anchorOf(payload),
       recordedAt: new Date().toISOString(),
+      source: 'recorded',
       redacted: redactPayloads,
       headers: carried,
       body: JSON.stringify(stored, null, 2),

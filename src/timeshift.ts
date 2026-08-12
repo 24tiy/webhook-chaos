@@ -45,6 +45,50 @@ export function shiftTimestamps<T>(value: T, deltaMs: number): T {
   return value;
 }
 
+const PLAUSIBLE_EPOCH_SECONDS = { min: 1_000_000_000, max: 4_000_000_000 };
+
+export function isPlausibleEpochSeconds(value: unknown): value is number {
+  return (
+    typeof value === 'number' &&
+    Number.isInteger(value) &&
+    value >= PLAUSIBLE_EPOCH_SECONDS.min &&
+    value <= PLAUSIBLE_EPOCH_SECONDS.max
+  );
+}
+
+export function epochSecondsToIso(seconds: number): string {
+  return new Date(seconds * 1000).toISOString();
+}
+
+export function shiftEpochFields<T>(value: T, deltaMs: number, fields: readonly string[]): T {
+  if (deltaMs === 0) return value;
+  const shiftable = new Set(fields);
+  const deltaSeconds = Math.round(deltaMs / 1000);
+
+  const walk = (node: unknown): unknown => {
+    if (Array.isArray(node)) return node.map(walk);
+    if (node !== null && typeof node === 'object') {
+      const out: Record<string, unknown> = {};
+      for (const [key, item] of Object.entries(node as Record<string, unknown>)) {
+        out[key] = shiftable.has(key) && isPlausibleEpochSeconds(item) ? item + deltaSeconds : walk(item);
+      }
+      return out;
+    }
+    return node;
+  };
+
+  return walk(value) as T;
+}
+
+export function findEpochAnchor(payload: unknown, fields: readonly string[]): string | null {
+  if (payload === null || typeof payload !== 'object' || Array.isArray(payload)) return null;
+  const record = payload as Record<string, unknown>;
+  for (const field of fields) {
+    if (isPlausibleEpochSeconds(record[field])) return epochSecondsToIso(record[field] as number);
+  }
+  return null;
+}
+
 export function findAnchor(payload: unknown, fields: readonly string[]): string | null {
   if (payload === null || typeof payload !== 'object' || Array.isArray(payload)) return null;
   const record = payload as Record<string, unknown>;

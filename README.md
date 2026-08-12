@@ -113,7 +113,7 @@ So `at` and `deliver_at` are separate:
 
 The payload is rewritten to say it happened 5 seconds into the run. The request is sent 4 hours in (or 4 seconds, under `--time-scale 1h=1s`). Timestamps inside the payload are shifted as a block, so `created_at`, `updated_at` and every nested `processed_at` keep their original spacing and their original UTC offsets.
 
-Under `--time-scale` the payload clock stays uncompressed, so payload timestamps can run slightly ahead of the compressed wall clock. Relative order between payloads, which is what a stale-event test actually depends on, is exact at any scale.
+Under `--time-scale` the payload clock stays uncompressed, so payload timestamps can run slightly ahead of the compressed wall clock: an event four scenario-hours out is delivered one real second in, still carrying the timestamp it was generated with. Absolute age against your app's `Date.now()` is what compression costs you. Relative order between payloads, which is what a stale-event test actually depends on, is exact at any scale.
 
 ## Scenarios
 
@@ -202,15 +202,36 @@ expect(await orderState('5678901234567')).toMatchObject({ status: 'cancelled' })
 
 ## Providers
 
-Shopify only, for now. A provider is a signing scheme, a set of headers, a retry schedule and the fields that carry the event's own timestamp.
+Shopify and Stripe. A provider is a signing scheme, a retry schedule, the fields that carry the event's own clock, and the rules for where the topic and the event id live.
 
-Stripe is next, and it is the reason the signature clock is modelled separately: `Stripe-Signature` carries a timestamp that the official libraries reject after 300 seconds, so a replayed fixture has to be signed now while its payload still claims to be four hours old.
+The two differ in almost every one of those, which is why the abstraction earns its place:
+
+| | Shopify | Stripe |
+|---|---|---|
+| signature | base64 HMAC of the body | hex HMAC of `timestamp.body` |
+| signature clock | none | `t=` in the header, rejected after 300s |
+| topic | `X-Shopify-Topic` header | `type` field in the body |
+| event id | `X-Shopify-Webhook-Id` header | `id` field in the body |
+| payload clock | ISO 8601 strings | unix integers |
+| retries | 8 attempts over 4 hours | 9 attempts over 3 days |
+
+Stripe is why the signature clock is modelled apart from the payload clock. A recorded Stripe fixture cannot be replayed with the signature it arrived with: the official libraries compare `t=` against now and reject anything older than 300 seconds. So every delivery is signed fresh, while the payload keeps the `created` value the scenario gives it. There is a test that asserts exactly this, by checking that re-signing at the fixture's own recorded time would fall outside tolerance.
+
+Shifting a unix clock needs more care than shifting ISO strings, because a payload is full of integers that are not times. Only known keys are shifted (`created`, `period_end`, `trial_end` and friends), and only when the value falls in a plausible epoch range, so `amount: 4495` and `exp_year: 2030` are left alone.
+
+```bash
+npx webhook-chaos record --out fixtures/stripe --provider stripe --forward http://localhost:3000/webhooks
+```
+
+The Stripe retry schedule is a rougher approximation than the Shopify one. Stripe documents exponential backoff over about three days without publishing the exact intervals, so the shape is right and the individual gaps are invented.
 
 ## Fixtures in this repository
 
 The four fixtures under `fixtures/shopify` are real. They were recorded from a Shopify development store on 2026-08-11 at API version 2026-07, from a single order taken through create, paid, updated and cancelled, so they share one order id and one coherent history. Each payload has 94 top-level fields, which is what a real `orders/*` body looks like.
 
-They went through the recorder's scrubber on the way in, and the shop domain was replaced with `webhook-chaos.myshopify.com` afterwards.
+They went through the recorder's scrubber on the way in, and the shop domain was replaced with `webhook-chaos.myshopify.com` afterwards. Every fixture carries a `source` field, and these four say `recorded`.
+
+The Stripe fixtures under `fixtures/stripe` say `synthetic`, because they were written by hand rather than captured from an account. They have the right envelope and the right clock, and they are enough to run the scenario, but record your own before trusting them.
 
 Recording them produced the argument for this tool better than any documentation could. Four events fired in the order create, paid, updated, updated. They arrived in the order **updated, paid, updated, create** — the creation event for the order landed last, after the payment. Nothing was wrong: no retries, no failures, a single healthy endpoint, a 143 ms round trip. That is simply how Shopify delivers.
 

@@ -3,7 +3,6 @@ import { planScenario, type PlannedDelivery } from './plan.js';
 import { getProvider } from './providers/index.js';
 import type { Provider } from './providers/types.js';
 import type { Scenario } from './scenario.js';
-import { findAnchor, shiftTimestamps } from './timeshift.js';
 
 export interface DeliveryOutcome {
   delivery: PlannedDelivery;
@@ -72,14 +71,18 @@ export function prepareRequest(input: {
   const { fixture, provider, delivery, originMs, secret, target } = input;
 
   const payload = parseFixtureBody(fixture);
-  const anchor = fixture.anchor ?? findAnchor(payload, provider.anchorFields);
-  const eventMs = originMs + delivery.eventOffsetMs;
-  const deltaMs = anchor === null ? 0 : eventMs - Date.parse(anchor);
-  const shifted = shiftTimestamps(payload, deltaMs);
-  const body = Buffer.from(JSON.stringify(shifted), 'utf8');
+  const anchor = fixture.anchor ?? provider.anchorOf(payload);
+  const eventTime = new Date(originMs + delivery.eventOffsetMs);
 
+  const prepared = provider.preparePayload({
+    payload,
+    anchor,
+    eventTime,
+    webhookId: delivery.webhookId,
+  });
+
+  const body = Buffer.from(JSON.stringify(prepared), 'utf8');
   const topic = fixture.topic;
-  const eventTime = new Date(eventMs);
 
   const request = provider.build({
     body,

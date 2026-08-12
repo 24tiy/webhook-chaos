@@ -6,6 +6,7 @@ export interface Fixture {
   topic: string;
   anchor: string | null;
   recordedAt: string;
+  source: 'recorded' | 'synthetic';
   redacted: boolean;
   headers: Record<string, string>;
   body: string;

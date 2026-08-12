@@ -3,6 +3,7 @@
   "topic": "orders/updated",
   "anchor": "2026-08-11T08:27:43-04:00",
   "recordedAt": "2026-08-11T12:27:45.690Z",
+  "source": "recorded",
   "redacted": true,
   "headers": {
     "x-shopify-topic": "orders/updated",
